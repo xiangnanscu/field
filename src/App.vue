@@ -1,13 +1,22 @@
 <script setup>
-// This starter template is using Vue 3 <script setup> SFCs
-// Check out https://vuejs.org/api/sfc-script-setup.html#script-setup
-import ValidateInput from './components/ValidateInput.vue'
+import { computed } from 'vue';
+import MainPage from './components/MainPage.vue'
 import packages from '../package.json'
+
+const githubRepoUrl = computed(() => {
+  let matched = packages.name.match(/@(\w+)\/(\w+)/)
+  if (matched) {
+    return `https://github.com/${matched[1]}/${matched[2]}.git`
+  } else {
+    return `https://github.com/xiangnanscu/${packages.name}.git`
+  }
+})
+const npmUrl = `https://www.npmjs.com/package/${packages.name}`
 </script>
 
 <template>
-  <h1>{{ packages.name }}-{{packages.version}}</h1>
-  <ValidateInput msg="Validator" />
+  <h1><a :href="githubRepoUrl">{{ packages.name }}</a>-<a :href="npmUrl">{{ packages.version }}</a></h1>
+  <MainPage />
 </template>
 
 <style>

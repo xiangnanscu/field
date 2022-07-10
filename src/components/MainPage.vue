@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from 'vue'
-import Validator from '../validator.mjs'
+import Validator from '../field.mjs'
 
 defineProps({
   msg: String

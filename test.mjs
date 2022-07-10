@@ -1,1 +1,0 @@
-import v from './src/validator.mjs'
