@@ -285,7 +285,7 @@ class sfzh extends string {
   }
 }
 
-let integerOptionNames = ["min", "max", "serial"];
+let integerOptionNames = [...baseOptionNames, "min", "max", "serial"];
 let intergerValidatorNames = ["min", "max"];
 class integer extends basefield {
   type = "integer";
@@ -325,7 +325,7 @@ class text extends basefield {
   dbType = "text";
 }
 let floatValidatorNames = ["min", "max"];
-let floatOptionNames = ["min", "max", "precision"];
+let floatOptionNames = [...baseOptionNames, "min", "max", "precision"];
 class float extends basefield {
   type = "float";
   dbType = "float";
@@ -356,7 +356,7 @@ let DEFAULT_BOOLEAN_CHOICES = [
   { label: "是", value: true },
   { label: "否", value: false },
 ];
-let booleanOptionNames = ["cn"];
+let booleanOptionNames = [...baseOptionNames, "cn"];
 class boolean extends basefield {
   type = "boolean";
   dbType = "boolean";
@@ -386,12 +386,16 @@ class boolean extends basefield {
     }
   }
 }
+const jsonOptionNames = [...baseOptionNames]
 class json extends basefield {
   type = "json";
   dbType = "jsonb";
+  getOptionNames() {
+    return jsonOptionNames
+  }
   json() {
     let json = super.json();
-    this.tag = "textarea";
+    json.tag = "textarea";
     return json;
   }
   prepareForDb(value) {
@@ -410,8 +414,8 @@ function skipValidateWhenString(v) {
   }
 }
 function checkArrayType(v) {
-  if (typeof v !== "object") {
-    throw new Error("array field must be a table");
+  if (! v instanceof Array) {
+    throw new Error("value of array field must be a array");
   } else {
     return v;
   }
@@ -446,7 +450,7 @@ class array extends json {
 function makeEmptyArray() {
   return [];
 }
-let tableOptionNames = ["model", "subfields", "maxRows"];
+let tableOptionNames = [...baseOptionNames, "model", "subfields", "maxRows"];
 class table extends array {
   type = "table";
   maxRows = TABLE_MAX_ROWS;
@@ -482,13 +486,13 @@ class table extends array {
   }
   json() {
     let ret = super.json();
-    let subfields = [];
+    let model = {fieldNames:[],fields:{}};
     for (let name of this.model.fieldNames) {
       let field = this.model.fields[name];
-      subfields.push(field.json());
+      model.fieldNames.push(name)
+      model.fields[name] = field
     }
-    delete ret.model;
-    ret.subfields = subfields;
+    ret.model = model;
     return ret;
   }
   getSubfields() {
@@ -497,7 +501,7 @@ class table extends array {
     });
   }
   load(rows) {
-    if (typeof rows !== "object") {
+    if (! rows instanceof Array) {
       throw new Error("value of table field must be table, not " + typeof rows);
     }
     for (let i = 0; i < rows.length; i = i + 1) {
@@ -506,7 +510,7 @@ class table extends array {
     return rows;
   }
 }
-const datetimeOptionNames = ["auto_now_add", "auto_now", "precision", "timezone"];
+const datetimeOptionNames = [...baseOptionNames, "auto_now_add", "auto_now", "precision", "timezone"];
 class datetime extends basefield {
   type = "datetime";
   dbType = "timestamp";
@@ -543,9 +547,13 @@ class datetime extends basefield {
     }
   }
 }
+const dateOptionNames = [...baseOptionNames]
 class date extends basefield {
   type = "date";
   dbType = "date";
+  getOptionNames() {
+    return dateOptionNames
+  }
   getValidators(validators) {
     validators.unshift(Validator.date);
     return super.getValidators(validators);
@@ -558,7 +566,7 @@ class date extends basefield {
     }
   }
 }
-const timeOptionNames = ["precision", "timezone"]
+const timeOptionNames = [...baseOptionNames, "precision", "timezone"]
 class time extends basefield {
   type = "time";
   dbType = "time";
@@ -590,6 +598,7 @@ let VALID_FOREIGN_KEY_TYPES = {
   time: Validator.time,
 };
 let foreignkeyOptionNames = [
+  ...baseOptionNames,
   "reference",
   "reference_column",
   "realtime",
@@ -766,6 +775,7 @@ function getPayload(kwargs = {}) {
   return data;
 }
 let aliossOptionNames = [
+  ...baseOptionNames,
   "size",
   "policy",
   "sizeArg",

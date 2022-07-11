@@ -1,6 +1,6 @@
 {
   "name": "@xiangnanscu/field",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "field",
   "main": "src/field.mjs",
   "scripts": {
@@ -23,7 +23,7 @@
     "url": "https://github.com/xiangnanscu/field/issues"
   },
   "jest": {
-    "testRegex":"(/__tests__/.*|(\\.|/)(test|spec))\\.m?[jt]sx?$",
+    "testRegex": "(/__tests__/.*|(\\.|/)(test|spec))\\.m?[jt]sx?$",
     "transform": {}
   },
   "homepage": "https://github.com/xiangnanscu/field#readme",
