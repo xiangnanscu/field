@@ -2,26 +2,24 @@ import { string, sfzh, integer } from './field.mjs'
 
 
 const s1 = string.new({ maxlength: 5, minlength: 2, name: 's1', required: true })
-try {
-  s1.validate("")
-
-} catch (error) {
-  if (error.message !== s1.errorMessages.required) {
-    throw "should raise required error"
-  }
-}
-try {
-  s1.validate("1")
-
-} catch (error) {
-
-}
-try {
-  s1.validate('12')
-
-} catch (error) {
-
-}
+test('必填空字符串', () => {
+  expect(() => s1.validate("")).toThrow('此项必填');
+});
+test('必填null', () => {
+  expect(() => s1.validate(null)).toThrow('此项必填');
+});
+test('必填undefined', () => {
+  expect(() => s1.validate(undefined)).toThrow('此项必填');
+});
+test('最小长度', () => {
+  expect(() => s1.validate("1")).toThrow(`字数不能少于${s1.minlength}个`);
+});
+test('最大长度', () => {
+  expect(() => s1.validate("123456")).toThrow(`字数不能多于${s1.maxlength}个`);
+});
+test('去空格', () => {
+  expect(s1.validate("1 2 3")).toBe('123')
+});
 
 const sfz1 = sfzh.new({ name: 'sfz1', required: true })
 try {

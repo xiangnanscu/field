@@ -506,12 +506,12 @@ class table extends array {
     return rows;
   }
 }
+const datetimeOptionNames = ["auto_now_add", "auto_now", "precision", "timezone"];
 class datetime extends basefield {
   type = "datetime";
   dbType = "timestamp";
   precision = 0;
   timezone = true;
-  optionNames = ["auto_now_add", "auto_now", "precision", "timezone"];
   constructor(options) {
     super(options);
     if (this.autoNowAdd) {
@@ -519,18 +519,21 @@ class datetime extends basefield {
     }
     return this;
   }
+  getOptionNames() {
+    return datetimeOptionNames
+  }
   getValidators(validators) {
     validators.unshift(Validator.datetime);
     return super.getValidators(validators);
   }
   json() {
-    let ret = basefield.json.call(this);
+    let ret = super.json();
     if (ret.disabled === undefined && (ret.autoNow || ret.autoNowAdd)) {
       ret.disabled = true;
     }
     return ret;
   }
-  prepareForDb(value, data) {
+  prepareForDb(value) {
     if (this.autoNow) {
       return ngxLocaltime();
     } else if (value === "" || value === undefined) {
@@ -547,7 +550,7 @@ class date extends basefield {
     validators.unshift(Validator.date);
     return super.getValidators(validators);
   }
-  prepareForDb(value, data) {
+  prepareForDb(value) {
     if (value === "" || value === undefined) {
       return NULL;
     } else {
@@ -555,17 +558,20 @@ class date extends basefield {
     }
   }
 }
+const timeOptionNames = ["precision", "timezone"]
 class time extends basefield {
   type = "time";
   dbType = "time";
   precision = 0;
   timezone = true;
-  optionNames = ["precision", "timezone"];
+  getOptionNames() {
+    return timeOptionNames
+  }
   getValidators(validators) {
     validators.unshift(Validator.time);
     return super.getValidators(validators);
   }
-  prepareForDb(value, data) {
+  prepareForDb(value) {
     if (value === "" || value === undefined) {
       return NULL;
     } else {
@@ -595,7 +601,8 @@ let foreignkeyOptionNames = [
 class foreignkey extends basefield {
   type = "foreignkey";
   convert = String;
-  optionNames = foreignkeyOptionNames;
+  adminUrlName = 'admin';
+  modelsUrlName = 'models';
   constructor(options) {
     if (options.dbType === undefined) {
       options.dbType = NOT_DEFIEND;
@@ -632,6 +639,9 @@ class foreignkey extends basefield {
       this.dbType = fk.dbType || fk.type;
     }
     return this;
+  }
+  getOptionNames() {
+    return foreignkeyOptionNames
   }
   getValidators(validators) {
     let fkName = this.referenceColumn;
@@ -677,7 +687,7 @@ class foreignkey extends basefield {
     // return setmetatable({ [fkName]: value }, { __index: __index });
     return { [fkName]: value }
   }
-  prepareForDb(value, data) {
+  prepareForDb(value) {
     if (value === "" || value === undefined) {
       return NULL;
     } else {
@@ -685,8 +695,7 @@ class foreignkey extends basefield {
     }
   }
   json() {
-    let app = require("mvc.app");
-    let ret = basefield.json.call(this);
+    let ret = super.json();
     ret.reference = this.reference.tableName;
     ret.autocomplete = true;
     if (ret.realtime === undefined) {
@@ -699,7 +708,7 @@ class foreignkey extends basefield {
       ret.limitQueryName = "__limit";
     }
     if (ret.url === undefined) {
-      ret.url = `/${app.adminUrlName}/${app.modelsUrlName}/foreignkey/${ret.tableName}?__name=${this.name}`;
+      ret.url = `/${this.adminUrlName}/${this.modelsUrlName}/foreignkey/${ret.tableName}?__name=${this.name}`;
     }
     return ret;
   }
@@ -771,7 +780,6 @@ class alioss extends string {
   payload = getPayload();
   getPayload = getPayload;
   getPolicy = getPolicy;
-  optionNames = aliossOptionNames;
   constructor(options) {
     if (options.maxlength === undefined) {
       options.maxlength = 300;
@@ -795,6 +803,9 @@ class alioss extends string {
       }.aliyuncs.com/`;
     this.policy = undefined;
     return this;
+  }
+  getOptionNames() {
+    return aliossOptionNames
   }
   getValidators(validators) {
     validators.unshift(Validator.url);

@@ -1,5 +1,4 @@
 {
-  "type": "module",
   "name": "@xiangnanscu/field",
   "version": "0.1.0",
   "description": "field",
@@ -12,7 +11,7 @@
     "release": "push_option=release npm run push",
     "push": "git add . && git commit -am \"${msg:-push}\" && git push --push-option=${push_option:-nothing}",
     "replace": "find .  -type d \\( -name .git -o -name node_modules \\) -prune -o  -type f  -exec  sed -i s/validator/field/g {} \\;",
-    "test": "jest --config=jest.config.js"
+    "test": "yarn node --experimental-vm-modules $(yarn bin jest)"
   },
   "repository": {
     "type": "git",
@@ -23,9 +22,14 @@
   "bugs": {
     "url": "https://github.com/xiangnanscu/field/issues"
   },
+  "jest": {
+    "testRegex":"(/__tests__/.*|(\\.|/)(test|spec))\\.m?[jt]sx?$",
+    "transform": {}
+  },
   "homepage": "https://github.com/xiangnanscu/field#readme",
   "devDependencies": {
     "@vitejs/plugin-vue": "^2.3.3",
+    "jest": "^28.1.2",
     "vite": "^2.9.9",
     "vue": "^3.2.25"
   },
