@@ -1,4 +1,4 @@
-import { string, sfzh, integer, datetime, date } from './field.mjs'
+import { string, sfzh, integer, datetime, date, array } from './field.mjs'
 
 
 const s1 = string.new({ maxlength: 5, minlength: 2, name: 's1', required: true })
@@ -181,3 +181,7 @@ test('非法date月份', () => {
 test('非法date日期', () => {
   expect(() => d2.validate('2010-01-41')).toThrow(/日期数字\d+错误/)
 });
+
+const a1 = array.new({ name: 'a1' })
+
+a1.validate('[]')

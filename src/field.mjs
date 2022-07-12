@@ -160,9 +160,17 @@ class basefield {
       return value;
     }
     for (let validator of this.finalValidators) {
-      value = validator(value, ctx);
-      if (value === undefined) {
-        return
+      try {
+        value = validator(value, ctx);
+        if (value === undefined) {
+          return
+        }
+      } catch (error) {
+        if (error instanceof Validator.SkipValidateError) {
+          return value
+        } else {
+          throw error
+        }
       }
     }
     return value;
@@ -408,7 +416,7 @@ class json extends basefield {
 }
 function skipValidateWhenString(v) {
   if (typeof v === "string") {
-    return v;
+    throw new Validator.SkipValidateError()
   } else {
     return v;
   }
@@ -439,7 +447,6 @@ class array extends json {
       validators.unshift(nonEmptyArrayRequired(this.errorMessages.required));
     }
     validators.unshift(checkArrayType);
-    validators.push(Validator.encodeAsArray);
     validators.unshift(skipValidateWhenString);
     return super.getValidators(validators);
   }
