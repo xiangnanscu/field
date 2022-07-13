@@ -836,6 +836,24 @@ class alioss extends string {
     return ret;
   }
 }
+
+export default {
+  basefield,
+  string,
+  text,
+  integer,
+  float,
+  datetime,
+  date,
+  time,
+  json,
+  array,
+  table,
+  foreignkey,
+  boolean,
+  alioss,
+  sfzh,
+};
 export {
   basefield,
   string,
