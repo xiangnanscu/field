@@ -183,5 +183,9 @@ test('非法date日期', () => {
 });
 
 const a1 = array.new({ name: 'a1' })
-
-a1.validate('[]')
+test('数组不能为数字', () => {
+  expect(() => a1.validate(1)).toThrow(/value of array field must be a array/)
+});
+test('数组跳过字符串类型', () => {
+  expect(a1.validate('[]')).toBe('[]')
+});

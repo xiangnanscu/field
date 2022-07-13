@@ -422,7 +422,7 @@ function skipValidateWhenString(v) {
   }
 }
 function checkArrayType(v) {
-  if (! v instanceof Array) {
+  if (!(v instanceof Array)) {
     throw new Error("value of array field must be a array");
   } else {
     return v;
