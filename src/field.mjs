@@ -73,7 +73,7 @@ function getChoicesValidator(choices, message) {
   }
   return choicesValidator;
 }
-let databaseOptionNames = ["primary_key", "null", "unique", "index", "db_type"];
+let databaseOptionNames = ["primaryKey", "null", "unique", "index", "dbType"];
 let baseOptionNames =
   ["name", "type", "required", "label", "choices", "strict", "default", "errorMessages", "validators", ...databaseOptionNames];
 
@@ -630,7 +630,7 @@ class foreignkey extends basefield {
       return this;
     }
     assert(
-      typeof fkModel === "object",
+      typeof fkModel === "function",
       `a foreignkey must define reference model. not ${fkModel}(type: ${typeof fkModel})`
     );
     let rc = this.referenceColumn;
