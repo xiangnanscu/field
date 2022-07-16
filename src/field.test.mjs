@@ -6,6 +6,7 @@ test('string.json()', () => {
   expect(s1.json()).toEqual({
     name: 's1',
     type: 'string',
+    "dbType": "varchar",
     required: true,
     label: 's1',
     default: '',
@@ -43,6 +44,7 @@ test('sfzh.json()', () => {
   expect(sfz1.json()).toEqual({
     name: 'sfz1',
     type: 'sfzh',
+    "dbType": "varchar",
     required: true,
     label: 'sfz1',
     default: '',
@@ -77,19 +79,7 @@ test('integer.json()', () => {
   expect(i1.json()).toEqual({
     name: 'i1',
     type: 'integer',
-    required: false,
-    label: 'i1',
-    null: true,
-    min: 1,
-    max: 3,
-    tag: 'input',
-    lazy: true
-  });
-});
-test('integer.json()', () => {
-  expect(i1.json()).toEqual({
-    name: 'i1',
-    type: 'integer',
+    "dbType": "integer",
     required: false,
     label: 'i1',
     null: true,
@@ -124,6 +114,7 @@ test('datetime.json()', () => {
   expect(d1.json()).toEqual({
     name: 'd1',
     type: 'datetime',
+    "dbType": "timestamp",
     required: false,
     label: 'd1',
     null: true,
@@ -162,6 +153,7 @@ test('date.json()', () => {
   expect(d2.json()).toEqual({
     name: 'd2',
     type: 'date',
+    "dbType": "date",
     required: false,
     label: 'd2',
     null: true,

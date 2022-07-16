@@ -4,6 +4,7 @@
   "description": "field",
   "main": "src/field.mjs",
   "scripts": {
+    "force-release": "1",
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
