@@ -13,7 +13,7 @@ function assert(bool, errMsg) {
     return bool
   }
 }
-function ngxLocaltime(d = new Date()) {
+function getLocalTime(d = new Date()) {
   return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()} ${d.getHours()}:${d.getMinutes()}:${d.getSeconds()}`
 }
 function cleanChoice(c) {
@@ -78,6 +78,7 @@ let baseOptionNames =
   ["name", "type", "required", "label", "choices", "strict", "default", "errorMessages", "validators", ...databaseOptionNames];
 
 class basefield {
+  static getLocalTime = getLocalTime
   static NOT_DEFIEND = NOT_DEFIEND;
   required = false;
   static new(options) {
@@ -526,7 +527,7 @@ class datetime extends basefield {
   constructor(options) {
     super(options);
     if (this.autoNowAdd) {
-      this.default = ngxLocaltime;
+      this.default = getLocalTime;
     }
     return this;
   }
@@ -546,7 +547,7 @@ class datetime extends basefield {
   }
   prepareForDb(value) {
     if (this.autoNow) {
-      return ngxLocaltime();
+      return getLocalTime();
     } else if (value === "" || value === undefined) {
       return NULL;
     } else {
