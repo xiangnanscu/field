@@ -39,7 +39,7 @@ test('去空格', () => {
 });
 
 const sfz1 = sfzh.new({ name: 'sfz1', required: true })
-// console.log(sfz1.json())
+// console.log(sfz1.finalValidators)
 test('sfzh.json()', () => {
   expect(sfz1.json()).toEqual({
     name: 'sfz1',

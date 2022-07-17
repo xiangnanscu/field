@@ -288,10 +288,6 @@ class sfzh extends string {
     super(options);
     return this;
   }
-  getValidators(validators) {
-    validators.unshift(Validator.sfzh);
-    return super.getValidators(validators);
-  }
 }
 
 let integerOptionNames = [...baseOptionNames, "min", "max", "serial"];
