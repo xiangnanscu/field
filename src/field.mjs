@@ -604,7 +604,7 @@ let VALID_FOREIGN_KEY_TYPES = {
 let foreignkeyOptionNames = [
   ...baseOptionNames,
   "reference",
-  "reference_column",
+  "referenceColumn",
   "realtime",
   "keywordQueryName",
   "limitQueryName",
