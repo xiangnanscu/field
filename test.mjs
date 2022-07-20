@@ -1,4 +1,4 @@
-import { string, sfzh, integer, datetime, date, array } from './field.mjs'
+import { string, sfzh, integer, datetime, date, array } from './src/field.mjs'
 
 
 const s1 = string.new({ maxlength: 5, minlength: 2, name: 's1', required: true })
