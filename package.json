@@ -35,6 +35,6 @@
     "vue": "^3.2.37"
   },
   "dependencies": {
-    "@xiangnanscu/validator": "latest"
+    "@xiangnanscu/validator": "^0.2.0"
   }
 }
