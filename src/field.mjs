@@ -490,7 +490,7 @@ class table extends array {
   }
   json() {
     let ret = super.json();
-    let model = {fieldNames:[],fields:{}};
+    let model = { fieldNames: [], fields: {} };
     for (let name of this.model.fieldNames) {
       let field = this.model.fields[name];
       model.fieldNames.push(name)
@@ -505,7 +505,7 @@ class table extends array {
     });
   }
   load(rows) {
-    if (! rows instanceof Array) {
+    if (!rows instanceof Array) {
       throw new Error("value of table field must be table, not " + typeof rows);
     }
     for (let i = 0; i < rows.length; i = i + 1) {
@@ -626,7 +626,7 @@ class foreignkey extends basefield {
       return this;
     }
     assert(
-      typeof fkModel === "function",
+      typeof fkModel === "function" || typeof fkModel === "object",
       `a foreignkey must define reference model. not ${fkModel}(type: ${typeof fkModel})`
     );
     let rc = this.referenceColumn;
