@@ -75,12 +75,15 @@ function getChoicesValidator(choices, message) {
 }
 let databaseOptionNames = ["primaryKey", "null", "unique", "index", "dbType"];
 let baseOptionNames =
-  ["name", "type", "required", "label", "choices", "strict", "default", "errorMessages", "validators", ...databaseOptionNames];
+  ['required', 'label', 'choices', 'strict', 'disabled', 'error_messages', 'default', 'hint', 'tag',
+    'choices_module_name', "autocomplete", "image", "url",
+    'columns', 'verify_url', 'post_names', 'code_lifetime', ...databaseOptionNames];
 
 class basefield {
   static getLocalTime = getLocalTime
   static NOT_DEFIEND = NOT_DEFIEND;
   required = false;
+  optionNames = [];
   static new(options) {
     let self = new this({ ...options });
     self.finalValidators = self.getValidators([...options.validators || []]);
@@ -110,14 +113,20 @@ class basefield {
     this.errorMessages = { ...ERROR_MESSAGES, ...this.errorMessages };
     return this;
   }
-  getOptions(ctx = this) {
-    let options = {};
+
+  getOptions() {
+    let options = {
+      name: this.name,
+      type: this.type,
+      validators: this.validators
+    };
     for (let name of this.getOptionNames()) {
-      if (ctx[name] !== undefined) {
-        options[name] = ctx[name];
-      }
+      options[name] = this[name];
     }
     return options;
+  }
+  getOptionNames() {
+    return [...baseOptionNames, ...this.optionNames]
   }
   getValidators(validators) {
     if (this.required) {
@@ -196,14 +205,12 @@ function getMaxChoiceLength(choices) {
   return n;
 }
 let stringOptionNames = [
-  ...baseOptionNames,
   "compact",
   "trim",
   "pattern",
   "length",
   "minlength",
   "maxlength",
-  "sfzh",
 ];
 let stringValidatorNames = [
   "pattern",
@@ -216,12 +223,12 @@ class string extends basefield {
   dbType = "varchar";
   compact = true;
   trim = true;
+  optionNames = stringOptionNames;
   constructor(options) {
     if (
       !options.choices &&
       !options.length &&
-      !options.maxlength &&
-      !options.sfzh
+      !options.maxlength
     ) {
       throw new Error(
         `field ${options.name} must define maxlength or choices or length`
@@ -230,9 +237,6 @@ class string extends basefield {
     super(options);
     if (this.compact === undefined) {
       this.compact = true;
-    }
-    if (this.sfzh) {
-      this.length = 18;
     }
     if (this.default === undefined && !this.primaryKey && !this.unique) {
       this.default = "";
@@ -250,9 +254,6 @@ class string extends basefield {
       }
     }
     return this;
-  }
-  getOptionNames() {
-    return stringOptionNames
   }
   getValidators(validators) {
     if (this.sfzh) {
