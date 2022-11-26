@@ -6,6 +6,7 @@ const ERROR_MESSAGES = { required: "此项必填", choices: "无效选项" };
 const NULL = {};
 const NOT_DEFIEND = {};
 
+const repr = (e) => JSON.stringify(e)
 function assert(bool, errMsg) {
   if (!bool) {
     throw new Error(errMsg)
@@ -83,14 +84,16 @@ class basefield {
   static getLocalTime = getLocalTime
   static NOT_DEFIEND = NOT_DEFIEND;
   required = false;
-  optionNames = [];
+  optionNames = baseOptionNames;
   static new(options) {
-    let self = new this({ ...options });
-    self.finalValidators = self.getValidators([...options.validators || []]);
+    let self = new this(options);
+    self.validators = self.getValidators([]);
     return self;
   }
   constructor(options) {
+    console.log("base init1", options.maxlength, this.maxlength, repr(this.optionNames))
     Object.assign(this, this.getOptions(options))
+    console.log("base init2", options.maxlength, this.maxlength)
     if (this.dbType === undefined) {
       this.dbType = this.type;
     }
@@ -114,19 +117,17 @@ class basefield {
     return this;
   }
 
-  getOptions() {
+  getOptions(opts = this) {
     let options = {
-      name: this.name,
-      type: this.type,
-      validators: this.validators
+      name: opts.name,
+      type: opts.type,
     };
-    for (let name of this.getOptionNames()) {
-      options[name] = this[name];
+    for (let name of this.optionNames) {
+      if (opts[name] !== undefined) {
+        options[name] = opts[name];
+      }
     }
     return options;
-  }
-  getOptionNames() {
-    return [...baseOptionNames, ...this.optionNames]
   }
   getValidators(validators) {
     if (this.required) {
@@ -142,7 +143,9 @@ class basefield {
     return validators;
   }
   json() {
+    console.log("base.json")
     let json = this.getOptions();
+    console.log({ json })
     delete json.errorMessages
     if (typeof json.default === "function") {
       json.default = undefined;
@@ -169,7 +172,7 @@ class basefield {
     if (typeof value === "function") {
       return value;
     }
-    for (let validator of this.finalValidators) {
+    for (let validator of this.validators) {
       try {
         value = validator(value, ctx);
         if (value === undefined) {
@@ -205,6 +208,7 @@ function getMaxChoiceLength(choices) {
   return n;
 }
 let stringOptionNames = [
+  ...baseOptionNames,
   "compact",
   "trim",
   "pattern",
@@ -224,7 +228,7 @@ class string extends basefield {
   compact = true;
   trim = true;
   optionNames = stringOptionNames;
-  constructor(options) {
+  constructor2(options) {
     if (
       !options.choices &&
       !options.length &&
@@ -234,7 +238,9 @@ class string extends basefield {
         `field ${options.name} must define maxlength or choices or length`
       );
     }
-    super(options);
+    console.log("string init1")
+    // super(options);
+    console.log("string init2 this.maxlength", this.maxlength, repr(this.optionNames))
     if (this.compact === undefined) {
       this.compact = true;
     }
@@ -256,9 +262,6 @@ class string extends basefield {
     return this;
   }
   getValidators(validators) {
-    if (this.sfzh) {
-      validators.unshift(Validator.sfzh);
-    }
     if (this.compact) {
       validators.unshift(Validator.deleteSpaces);
     } else if (this.trim) {
@@ -272,22 +275,27 @@ class string extends basefield {
     validators.unshift(Validator.string);
     return super.getValidators(validators);
   }
-  json() {
-    let json = super.json();
-    return json;
-  }
+  // json() {
+  //   let json = super.json();
+  //   return json;
+  // }
   widgetAttrs(extraAttrs) {
     let attrs = { minlength: this.minlength };
     return { ...super.widgetAttrs(), ...attrs, ...extraAttrs };
   }
 }
+
 class sfzh extends string {
   type = "sfzh";
   dbType = "varchar";
   constructor(options) {
-    options.sfzh = true;
+    options.length = 18
     super(options);
     return this;
+  }
+  getValidators(validators) {
+    validators.unshift(Validator.sfzh);
+    return super.getValidators(validators)
   }
 }
 
@@ -296,15 +304,13 @@ let intergerValidatorNames = ["min", "max"];
 class integer extends basefield {
   type = "integer";
   dbType = "integer";
+  optionNames = integerOptionNames
   addMinOrMaxValidators(validators) {
     for (let e of intergerValidatorNames) {
       if (this[e]) {
         validators.unshift(Validator[e](this[e], this.errorMessages[e]));
       }
     }
-  }
-  getOptionNames() {
-    return integerOptionNames
   }
   getValidators(validators) {
     this.addMinOrMaxValidators(validators);
@@ -335,6 +341,7 @@ let floatOptionNames = [...baseOptionNames, "min", "max", "precision"];
 class float extends basefield {
   type = "float";
   dbType = "float";
+  optionNames = floatOptionNames
   addMinOrMaxValidators(validators) {
     for (let e of floatValidatorNames) {
       if (this[e]) {
@@ -342,9 +349,7 @@ class float extends basefield {
       }
     }
   }
-  getOptionNames() {
-    return floatOptionNames
-  }
+
   getValidators(validators) {
     this.addMinOrMaxValidators(validators);
     validators.unshift(Validator.number);
@@ -366,6 +371,7 @@ let booleanOptionNames = [...baseOptionNames, "cn"];
 class boolean extends basefield {
   type = "boolean";
   dbType = "boolean";
+  optionNames = booleanOptionNames
   constructor(options) {
     super(options);
     if (this.choices === undefined) {
@@ -373,9 +379,7 @@ class boolean extends basefield {
     }
     return this;
   }
-  getOptionNames() {
-    return booleanOptionNames
-  }
+
   getValidators(validators) {
     if (this.cn) {
       validators.unshift(Validator.booleanCn);
@@ -396,9 +400,7 @@ const jsonOptionNames = [...baseOptionNames]
 class json extends basefield {
   type = "json";
   dbType = "jsonb";
-  getOptionNames() {
-    return jsonOptionNames
-  }
+  optionNames = jsonOptionNames
   json() {
     let json = super.json();
     json.tag = "textarea";
@@ -459,15 +461,13 @@ let tableOptionNames = [...baseOptionNames, "model", "subfields", "maxRows"];
 class table extends array {
   type = "table";
   maxRows = TABLE_MAX_ROWS;
+  optionNames = tableOptionNames
   constructor(options) {
     super(options);
     if (!this.default || this.default === "") {
       this.default = makeEmptyArray;
     }
     return this;
-  }
-  getOptionNames() {
-    return tableOptionNames
   }
   getValidators(validators) {
     function validateByEachField(rows) {
@@ -521,6 +521,7 @@ class datetime extends basefield {
   dbType = "timestamp";
   precision = 0;
   timezone = true;
+  optionNames = datetimeOptionNames
   constructor(options) {
     super(options);
     if (this.autoNowAdd) {
@@ -528,9 +529,7 @@ class datetime extends basefield {
     }
     return this;
   }
-  getOptionNames() {
-    return datetimeOptionNames
-  }
+
   getValidators(validators) {
     validators.unshift(Validator.datetime);
     return super.getValidators(validators);
@@ -556,9 +555,7 @@ const dateOptionNames = [...baseOptionNames]
 class date extends basefield {
   type = "date";
   dbType = "date";
-  getOptionNames() {
-    return dateOptionNames
-  }
+  optionNames = dateOptionNames
   getValidators(validators) {
     validators.unshift(Validator.date);
     return super.getValidators(validators);
@@ -577,9 +574,7 @@ class time extends basefield {
   dbType = "time";
   precision = 0;
   timezone = true;
-  getOptionNames() {
-    return timeOptionNames
-  }
+  optionNames = timeOptionNames
   getValidators(validators) {
     validators.unshift(Validator.time);
     return super.getValidators(validators);
@@ -617,6 +612,7 @@ class foreignkey extends basefield {
   convert = String;
   adminUrlName = 'admin';
   modelsUrlName = 'models';
+  optionNames = foreignkeyOptionNames
   constructor(options) {
     if (options.dbType === undefined) {
       options.dbType = NOT_DEFIEND;
@@ -654,9 +650,7 @@ class foreignkey extends basefield {
     }
     return this;
   }
-  getOptionNames() {
-    return foreignkeyOptionNames
-  }
+
   getValidators(validators) {
     let fkName = this.referenceColumn;
     let convert = this.convert;
@@ -728,7 +722,7 @@ class foreignkey extends basefield {
   }
 }
 function getEnv(key) {
-  return ""
+  return process.env[key]
 }
 function byteSizeParser(key) {
   return ""
@@ -740,10 +734,7 @@ let OSS_REGION = getEnv("OSS_REGION");
 let OSS_SIZE = byteSizeParser(getEnv("OSS_SIZE") || "7MB");
 let OSS_EXPIRATION_DAYS = Number(getEnv("OSS_EXPIRATION_DAYS") || 180);
 function getPolicyTime(seconds) {
-  return (
-    seconds +
-    "T12:00:00.000Z"
-  );
+  return seconds + "T12:00:00.000Z"
 }
 let DEFAULT_POLICY = {
   expiration: getPolicyTime(3600 * 24 * OSS_EXPIRATION_DAYS),
@@ -795,6 +786,7 @@ class alioss extends string {
   payload = getPayload();
   getPayload = getPayload;
   getPolicy = getPolicy;
+  optionNames = aliossOptionNames
   constructor(options) {
     if (options.maxlength === undefined) {
       options.maxlength = 300;
@@ -819,9 +811,7 @@ class alioss extends string {
     this.policy = undefined;
     return this;
   }
-  getOptionNames() {
-    return aliossOptionNames
-  }
+
   getValidators(validators) {
     validators.unshift(Validator.url);
     return string.getValidators.call(this, validators);
