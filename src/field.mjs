@@ -7,7 +7,7 @@ const ERROR_MESSAGES = { required: "此项必填", choices: "无效选项" };
 const NULL = {};
 const NOT_DEFIEND = {};
 
-const repr = (e) => JSON.stringify(e);
+// const repr = (e) => JSON.stringify(e);
 function assert(bool, errMsg) {
   if (!bool) {
     throw new Error(errMsg);
@@ -39,7 +39,7 @@ function cleanChoice(c) {
 }
 function getChoices(rawChoices) {
   const choices = [];
-  for (let [i, c] of rawChoices.entries()) {
+  for (let c of rawChoices) {
     if (typeof c === "string" || typeof c === "number") {
       c = { value: c, label: c };
     } else if (typeof c === "object") {
@@ -64,7 +64,7 @@ function getChoicesValidator(choices, message) {
     message = `${message}，${getChoicesErrorMessage(choices)}`;
   }
   const isChoice = [];
-  for (const [_, c] of choices.entries()) {
+  for (const c of choices) {
     isChoice[c.value] = true;
   }
   function choicesValidator(value) {
@@ -103,7 +103,8 @@ class basefield {
   static NOT_DEFIEND = NOT_DEFIEND;
   __is_field_class__ = true;
   required = false;
-  getOptionNames() {
+  get optionNames() {
+    // define as getter so the subclass optionNames can be accessed in super call
     return baseOptionNames;
   }
   static new(options) {
@@ -144,7 +145,7 @@ class basefield {
       name: options.name,
       type: options.type,
     };
-    for (const name of this.getOptionNames()) {
+    for (const name of this.optionNames) {
       if (options[name] !== undefined) {
         ret[name] = options[name];
       }
@@ -242,7 +243,7 @@ class string extends basefield {
   dbType = "varchar";
   compact = true;
   trim = true;
-  getOptionNames() {
+  get optionNames() {
     return stringOptionNames;
   }
   constructor(options) {
@@ -311,7 +312,7 @@ const intergerValidatorNames = ["min", "max"];
 class integer extends basefield {
   type = "integer";
   dbType = "integer";
-  getOptionNames() {
+  get optionNames() {
     return integerOptionNames;
   }
   addMinOrMaxValidators(validators) {
@@ -351,7 +352,7 @@ const floatOptionNames = [...baseOptionNames, "min", "max", "precision"];
 class float extends basefield {
   type = "float";
   dbType = "float";
-  getOptionNames() {
+  get optionNames() {
     return floatOptionNames;
   }
   addMinOrMaxValidators(validators) {
@@ -384,7 +385,7 @@ const booleanOptionNames = [...baseOptionNames, "cn"];
 class boolean extends basefield {
   type = "boolean";
   dbType = "boolean";
-  getOptionNames() {
+  get optionNames() {
     return booleanOptionNames;
   }
   constructor(options) {
@@ -416,7 +417,7 @@ const jsonOptionNames = [...baseOptionNames];
 class json extends basefield {
   type = "json";
   dbType = "jsonb";
-  getOptionNames() {
+  get optionNames() {
     return jsonOptionNames;
   }
   json() {
@@ -486,7 +487,7 @@ const tableOptionNames = [
 class table extends array {
   type = "table";
   maxRows = TABLE_MAX_ROWS;
-  getOptionNames() {
+  get optionNames() {
     return tableOptionNames;
   }
   constructor(options) {
@@ -558,7 +559,7 @@ class datetime extends basefield {
   dbType = "timestamp";
   precision = 0;
   timezone = true;
-  getOptionNames() {
+  get optionNames() {
     return datetimeOptionNames;
   }
   constructor(options) {
@@ -595,7 +596,7 @@ const dateOptionNames = [...baseOptionNames];
 class date extends basefield {
   type = "date";
   dbType = "date";
-  getOptionNames() {
+  get optionNames() {
     return dateOptionNames;
   }
   getValidators(validators) {
@@ -616,7 +617,7 @@ class time extends basefield {
   dbType = "time";
   precision = 0;
   timezone = true;
-  getOptionNames() {
+  get optionNames() {
     return timeOptionNames;
   }
   getValidators(validators) {
@@ -658,7 +659,7 @@ class foreignkey extends basefield {
   adminUrlName = "admin";
   modelsUrlName = "models";
   convert = String;
-  getOptionNames() {
+  get optionNames() {
     return foreignkeyOptionNames;
   }
   constructor(options) {
@@ -771,8 +772,8 @@ class foreignkey extends basefield {
   }
 }
 
-function getEnv(key) {
-  return process.env[key];
+function getEnv() {
+  return "";
 }
 
 const sizeTable = {
@@ -805,9 +806,9 @@ const ALI_OSS_BUCKET = getEnv("ALI_OSS_BUCKET") || "";
 const ALI_OSS_REGION = getEnv("ALI_OSS_REGION") || "";
 const ALI_OSS_SIZE = byteSizeParser(getEnv("ALI_OSS_SIZE") || "1MB");
 const ALI_OSS_LIFETIME = Number(getEnv("ALI_OSS_LIFETIME")) || 30;
-const ALI_OSS_EXPIRATION_DAYS = Number(
-  getEnv("ALI_OSS_EXPIRATION_DAYS") || 180
-);
+// const ALI_OSS_EXPIRATION_DAYS = Number(
+//   getEnv("ALI_OSS_EXPIRATION_DAYS") || 180
+// );
 function getPolicyTime(seconds) {
   const now = new Date();
   return new Date(now + seconds * 1000).toISOString();
