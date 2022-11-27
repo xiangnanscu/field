@@ -16,8 +16,9 @@ function assert(bool, errMsg) {
   }
 }
 function getLocalTime(d = new Date()) {
-  return `${d.getFullYear()}-${d.getMonth() + 1
-    }-${d.getDate()} ${d.getHours()}:${d.getMinutes()}:${d.getSeconds()}`;
+  return `${d.getFullYear()}-${
+    d.getMonth() + 1
+  }-${d.getDate()} ${d.getHours()}:${d.getMinutes()}:${d.getSeconds()}`;
 }
 function cleanChoice(c) {
   let v;
@@ -264,7 +265,7 @@ class string extends basefield {
       assert(
         n > 0,
         "invalid string choices(empty choices or zero length value):" +
-        this.name
+          this.name
       );
       const m = this.length || this.maxlength;
       if (!m || n > m) {
@@ -684,7 +685,8 @@ class foreignkey extends basefield {
     const fk = fkModel.fields[rc];
     assert(
       fk,
-      `invalid foreignkey name ${rc} for foreign model ${fkModel.tableName || "[TABLE NAME NOT DEFINED YET]"
+      `invalid foreignkey name ${rc} for foreign model ${
+        fkModel.tableName || "[TABLE NAME NOT DEFINED YET]"
       }`
     );
     this.convert = assert(
@@ -876,8 +878,9 @@ class alioss extends string {
     this.sizeArg = options.size;
     this.size = byteSizeParser(options.size);
     this.lifetime = options.lifetime;
-    this.url = `//${options.bucket || ALI_OSS_BUCKET}.${options.region || ALI_OSS_REGION
-      }.aliyuncs.com/`;
+    this.url = `//${options.bucket || ALI_OSS_BUCKET}.${
+      options.region || ALI_OSS_REGION
+    }.aliyuncs.com/`;
     return this;
   }
   getPayload(options) {
