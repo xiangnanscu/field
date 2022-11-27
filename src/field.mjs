@@ -1,4 +1,5 @@
 import Validator from "@xiangnanscu/validator";
+import hmacsha1 from "crypto-js/hmac-sha1.js";
 
 const TABLE_MAX_ROWS = 1;
 const CHOICES_ERROR_DISPLAY_COUNT = 30;
@@ -6,16 +7,17 @@ const ERROR_MESSAGES = { required: "此项必填", choices: "无效选项" };
 const NULL = {};
 const NOT_DEFIEND = {};
 
-const repr = (e) => JSON.stringify(e)
+const repr = (e) => JSON.stringify(e);
 function assert(bool, errMsg) {
   if (!bool) {
-    throw new Error(errMsg)
+    throw new Error(errMsg);
   } else {
-    return bool
+    return bool;
   }
 }
 function getLocalTime(d = new Date()) {
-  return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()} ${d.getHours()}:${d.getMinutes()}:${d.getSeconds()}`
+  return `${d.getFullYear()}-${d.getMonth() + 1
+    }-${d.getDate()} ${d.getHours()}:${d.getMinutes()}:${d.getSeconds()}`;
 }
 function cleanChoice(c) {
   let v;
@@ -36,12 +38,12 @@ function cleanChoice(c) {
   return [v, l, c.hint || c[2]];
 }
 function getChoices(rawChoices) {
-  let choices = [];
+  const choices = [];
   for (let [i, c] of rawChoices.entries()) {
     if (typeof c === "string" || typeof c === "number") {
       c = { value: c, label: c };
     } else if (typeof c === "object") {
-      let [value, label, hint] = cleanChoice(c);
+      const [value, label, hint] = cleanChoice(c);
       c = { value, label, hint };
     } else {
       throw new Error("invalid choice type:" + typeof c);
@@ -54,15 +56,15 @@ function serializeChoice(choice) {
   return String(choice.value);
 }
 function getChoicesErrorMessage(choices) {
-  let validChoices = choices.map(serializeChoice).join("，");
+  const validChoices = choices.map(serializeChoice).join("，");
   return `限下列选项：${validChoices}`;
 }
 function getChoicesValidator(choices, message) {
   if (choices.length <= CHOICES_ERROR_DISPLAY_COUNT) {
     message = `${message}，${getChoicesErrorMessage(choices)}`;
   }
-  let isChoice = [];
-  for (let [_, c] of choices.entries()) {
+  const isChoice = [];
+  for (const [_, c] of choices.entries()) {
     isChoice[c.value] = true;
   }
   function choicesValidator(value) {
@@ -74,26 +76,43 @@ function getChoicesValidator(choices, message) {
   }
   return choicesValidator;
 }
-let databaseOptionNames = ["primaryKey", "null", "unique", "index", "dbType"];
-let baseOptionNames =
-  ['required', 'label', 'choices', 'strict', 'disabled', 'error_messages', 'default', 'hint', 'tag',
-    'choices_module_name', "autocomplete", "image", "url",
-    'columns', 'verify_url', 'post_names', 'code_lifetime', ...databaseOptionNames];
+const databaseOptionNames = ["primaryKey", "null", "unique", "index", "dbType"];
+const baseOptionNames = [
+  ...databaseOptionNames,
+  "required",
+  "label",
+  "choices",
+  "strict",
+  "disabled",
+  "error_messages",
+  "default",
+  "hint",
+  "lazy",
+  "tag",
+  "autocomplete",
+  "image",
+  "url",
+  "columns",
+  "verifyUrl",
+  "post_names",
+  "code_lifetime",
+];
 
 class basefield {
-  static getLocalTime = getLocalTime
+  static getLocalTime = getLocalTime;
   static NOT_DEFIEND = NOT_DEFIEND;
+  __is_field_class__ = true;
   required = false;
-  optionNames = baseOptionNames;
+  getOptionNames() {
+    return baseOptionNames;
+  }
   static new(options) {
-    let self = new this(options);
+    const self = new this(options);
     self.validators = self.getValidators([]);
     return self;
   }
   constructor(options) {
-    console.log("base init1", options.maxlength, this.maxlength, repr(this.optionNames))
-    Object.assign(this, this.getOptions(options))
-    console.log("base init2", options.maxlength, this.maxlength)
+    Object.assign(this, this.getOptions(options));
     if (this.dbType === undefined) {
       this.dbType = this.type;
     }
@@ -117,17 +136,20 @@ class basefield {
     return this;
   }
 
-  getOptions(opts = this) {
-    let options = {
-      name: opts.name,
-      type: opts.type,
+  getOptions(options) {
+    if (!options) {
+      options = this;
+    }
+    const ret = {
+      name: options.name,
+      type: options.type,
     };
-    for (let name of this.optionNames) {
-      if (opts[name] !== undefined) {
-        options[name] = opts[name];
+    for (const name of this.getOptionNames()) {
+      if (options[name] !== undefined) {
+        ret[name] = options[name];
       }
     }
-    return options;
+    return ret;
   }
   getValidators(validators) {
     if (this.required) {
@@ -143,12 +165,10 @@ class basefield {
     return validators;
   }
   json() {
-    console.log("base.json")
-    let json = this.getOptions();
-    console.log({ json })
-    delete json.errorMessages
+    const json = this.getOptions();
+    delete json.errorMessages;
     if (typeof json.default === "function") {
-      json.default = undefined;
+      delete json.default;
     }
     if (!json.tag) {
       if (json.choices && json.choices.length > 0 && !json.autocomplete) {
@@ -161,28 +181,28 @@ class basefield {
       json.lazy = true;
     }
     if (typeof json.choices === "function") {
-      json.choices = undefined
+      delete json.choices;
     }
     return json;
   }
   widgetAttrs(extraAttrs) {
-    return { required: this.required, readonly: this.disabled, ...extraAttrs }
+    return { required: this.required, readonly: this.disabled, ...extraAttrs };
   }
   validate(value, ctx) {
     if (typeof value === "function") {
       return value;
     }
-    for (let validator of this.validators) {
+    for (const validator of this.validators) {
       try {
         value = validator(value, ctx);
         if (value === undefined) {
-          return
+          return;
         }
       } catch (error) {
         if (error instanceof Validator.SkipValidateError) {
-          return value
+          return value;
         } else {
-          throw error
+          throw error;
         }
       }
     }
@@ -198,16 +218,16 @@ class basefield {
 }
 function getMaxChoiceLength(choices) {
   let n = 0;
-  for (let c of choices) {
-    let value = c.value;
-    let n1 = value.length;
+  for (const c of choices) {
+    const value = c.value;
+    const n1 = value.length;
     if (n1 > n) {
       n = n1;
     }
   }
   return n;
 }
-let stringOptionNames = [
+const stringOptionNames = [
   ...baseOptionNames,
   "compact",
   "trim",
@@ -216,31 +236,22 @@ let stringOptionNames = [
   "minlength",
   "maxlength",
 ];
-let stringValidatorNames = [
-  "pattern",
-  "length",
-  "minlength",
-  "maxlength",
-]
+const stringValidatorNames = ["pattern", "length", "minlength", "maxlength"];
 class string extends basefield {
   type = "string";
   dbType = "varchar";
   compact = true;
   trim = true;
-  optionNames = stringOptionNames;
-  constructor2(options) {
-    if (
-      !options.choices &&
-      !options.length &&
-      !options.maxlength
-    ) {
+  getOptionNames() {
+    return stringOptionNames;
+  }
+  constructor(options) {
+    if (!options.choices && !options.length && !options.maxlength) {
       throw new Error(
         `field ${options.name} must define maxlength or choices or length`
       );
     }
-    console.log("string init1")
-    // super(options);
-    console.log("string init2 this.maxlength", this.maxlength, repr(this.optionNames))
+    super(options);
     if (this.compact === undefined) {
       this.compact = true;
     }
@@ -248,13 +259,13 @@ class string extends basefield {
       this.default = "";
     }
     if (this.choices && this.choices.length > 0) {
-      let n = getMaxChoiceLength(this.choices);
+      const n = getMaxChoiceLength(this.choices);
       assert(
         n > 0,
         "invalid string choices(empty choices or zero length value):" +
         this.name
       );
-      let m = this.length || this.maxlength;
+      const m = this.length || this.maxlength;
       if (!m || n > m) {
         this.maxlength = n;
       }
@@ -267,7 +278,7 @@ class string extends basefield {
     } else if (this.trim) {
       validators.unshift(Validator.trim);
     }
-    for (let e of stringValidatorNames) {
+    for (const e of stringValidatorNames) {
       if (this[e]) {
         validators.unshift(Validator[e](this[e], this.errorMessages[e]));
       }
@@ -275,12 +286,8 @@ class string extends basefield {
     validators.unshift(Validator.string);
     return super.getValidators(validators);
   }
-  // json() {
-  //   let json = super.json();
-  //   return json;
-  // }
   widgetAttrs(extraAttrs) {
-    let attrs = { minlength: this.minlength };
+    const attrs = { minlength: this.minlength };
     return { ...super.widgetAttrs(), ...attrs, ...extraAttrs };
   }
 }
@@ -289,24 +296,26 @@ class sfzh extends string {
   type = "sfzh";
   dbType = "varchar";
   constructor(options) {
-    options.length = 18
+    options.length = 18;
     super(options);
     return this;
   }
   getValidators(validators) {
     validators.unshift(Validator.sfzh);
-    return super.getValidators(validators)
+    return super.getValidators(validators);
   }
 }
 
-let integerOptionNames = [...baseOptionNames, "min", "max", "serial"];
-let intergerValidatorNames = ["min", "max"];
+const integerOptionNames = [...baseOptionNames, "min", "max", "serial"];
+const intergerValidatorNames = ["min", "max"];
 class integer extends basefield {
   type = "integer";
   dbType = "integer";
-  optionNames = integerOptionNames
+  getOptionNames() {
+    return integerOptionNames;
+  }
   addMinOrMaxValidators(validators) {
-    for (let e of intergerValidatorNames) {
+    for (const e of intergerValidatorNames) {
       if (this[e]) {
         validators.unshift(Validator[e](this[e], this.errorMessages[e]));
       }
@@ -318,7 +327,7 @@ class integer extends basefield {
     return super.getValidators(validators);
   }
   json() {
-    let json = super.json();
+    const json = super.json();
     if (json.primaryKey && json.disabled === undefined) {
       json.disabled = true;
     }
@@ -336,14 +345,17 @@ class text extends basefield {
   type = "text";
   dbType = "text";
 }
-let floatValidatorNames = ["min", "max"];
-let floatOptionNames = [...baseOptionNames, "min", "max", "precision"];
+
+const floatValidatorNames = ["min", "max"];
+const floatOptionNames = [...baseOptionNames, "min", "max", "precision"];
 class float extends basefield {
   type = "float";
   dbType = "float";
-  optionNames = floatOptionNames
+  getOptionNames() {
+    return floatOptionNames;
+  }
   addMinOrMaxValidators(validators) {
-    for (let e of floatValidatorNames) {
+    for (const e of floatValidatorNames) {
       if (this[e]) {
         validators.unshift(Validator[e](this[e], this.errorMessages[e]));
       }
@@ -363,15 +375,18 @@ class float extends basefield {
     }
   }
 }
-let DEFAULT_BOOLEAN_CHOICES = [
+
+const DEFAULT_BOOLEAN_CHOICES = [
   { label: "是", value: true },
   { label: "否", value: false },
 ];
-let booleanOptionNames = [...baseOptionNames, "cn"];
+const booleanOptionNames = [...baseOptionNames, "cn"];
 class boolean extends basefield {
   type = "boolean";
   dbType = "boolean";
-  optionNames = booleanOptionNames
+  getOptionNames() {
+    return booleanOptionNames;
+  }
   constructor(options) {
     super(options);
     if (this.choices === undefined) {
@@ -396,13 +411,16 @@ class boolean extends basefield {
     }
   }
 }
-const jsonOptionNames = [...baseOptionNames]
+
+const jsonOptionNames = [...baseOptionNames];
 class json extends basefield {
   type = "json";
   dbType = "jsonb";
-  optionNames = jsonOptionNames
+  getOptionNames() {
+    return jsonOptionNames;
+  }
   json() {
-    let json = super.json();
+    const json = super.json();
     json.tag = "textarea";
     return json;
   }
@@ -416,7 +434,7 @@ class json extends basefield {
 }
 function skipValidateWhenString(v) {
   if (typeof v === "string") {
-    throw new Validator.SkipValidateError()
+    throw new Validator.SkipValidateError();
   } else {
     return v;
   }
@@ -457,13 +475,25 @@ class array extends json {
 function makeEmptyArray() {
   return [];
 }
-let tableOptionNames = [...baseOptionNames, "model", "subfields", "maxRows"];
+
+const tableOptionNames = [
+  ...baseOptionNames,
+  "model",
+  "subfields",
+  "maxRows",
+  "uploadable",
+];
 class table extends array {
   type = "table";
   maxRows = TABLE_MAX_ROWS;
-  optionNames = tableOptionNames
+  getOptionNames() {
+    return tableOptionNames;
+  }
   constructor(options) {
     super(options);
+    if (typeof this.model !== "object" || !this.model.__is_model_class__) {
+      throw new Error("please define model for a table field: " + this.name);
+    }
     if (!this.default || this.default === "") {
       this.default = makeEmptyArray;
     }
@@ -490,12 +520,12 @@ class table extends array {
     return super.getValidators(validators);
   }
   json() {
-    let ret = super.json();
-    let model = { fieldNames: [], fields: {} };
-    for (let name of this.model.fieldNames) {
-      let field = this.model.fields[name];
-      model.fieldNames.push(name)
-      model.fields[name] = field
+    const ret = super.json();
+    const model = { fieldNames: [], fields: {} };
+    for (const name of this.model.fieldNames) {
+      const field = this.model.fields[name];
+      model.fieldNames.push(name);
+      model.fields[name] = field.json();
     }
     ret.model = model;
     return ret;
@@ -506,7 +536,7 @@ class table extends array {
     });
   }
   load(rows) {
-    if (!rows instanceof Array) {
+    if (!(rows instanceof Array)) {
       throw new Error("value of table field must be table, not " + typeof rows);
     }
     for (let i = 0; i < rows.length; i = i + 1) {
@@ -515,13 +545,22 @@ class table extends array {
     return rows;
   }
 }
-const datetimeOptionNames = [...baseOptionNames, "auto_now_add", "auto_now", "precision", "timezone"];
+
+const datetimeOptionNames = [
+  ...baseOptionNames,
+  "autoNowAdd",
+  "autoNow",
+  "precision",
+  "timezone",
+];
 class datetime extends basefield {
   type = "datetime";
   dbType = "timestamp";
   precision = 0;
   timezone = true;
-  optionNames = datetimeOptionNames
+  getOptionNames() {
+    return datetimeOptionNames;
+  }
   constructor(options) {
     super(options);
     if (this.autoNowAdd) {
@@ -535,7 +574,7 @@ class datetime extends basefield {
     return super.getValidators(validators);
   }
   json() {
-    let ret = super.json();
+    const ret = super.json();
     if (ret.disabled === undefined && (ret.autoNow || ret.autoNowAdd)) {
       ret.disabled = true;
     }
@@ -551,11 +590,14 @@ class datetime extends basefield {
     }
   }
 }
-const dateOptionNames = [...baseOptionNames]
+
+const dateOptionNames = [...baseOptionNames];
 class date extends basefield {
   type = "date";
   dbType = "date";
-  optionNames = dateOptionNames
+  getOptionNames() {
+    return dateOptionNames;
+  }
   getValidators(validators) {
     validators.unshift(Validator.date);
     return super.getValidators(validators);
@@ -568,13 +610,15 @@ class date extends basefield {
     }
   }
 }
-const timeOptionNames = [...baseOptionNames, "precision", "timezone"]
+const timeOptionNames = [...baseOptionNames, "precision", "timezone"];
 class time extends basefield {
   type = "time";
   dbType = "time";
   precision = 0;
   timezone = true;
-  optionNames = timeOptionNames
+  getOptionNames() {
+    return timeOptionNames;
+  }
   getValidators(validators) {
     validators.unshift(Validator.time);
     return super.getValidators(validators);
@@ -587,7 +631,7 @@ class time extends basefield {
     }
   }
 }
-let VALID_FOREIGN_KEY_TYPES = {
+const VALID_FOREIGN_KEY_TYPES = {
   foreignkey: String,
   string: String,
   sfzh: String,
@@ -597,11 +641,13 @@ let VALID_FOREIGN_KEY_TYPES = {
   date: Validator.date,
   time: Validator.time,
 };
-let foreignkeyOptionNames = [
+const foreignkeyOptionNames = [
   ...baseOptionNames,
   "reference",
   "referenceColumn",
   "realtime",
+  "adminUrlName",
+  "modelUrlName",
   "keywordQueryName",
   "limitQueryName",
   "autocomplete",
@@ -609,33 +655,36 @@ let foreignkeyOptionNames = [
 ];
 class foreignkey extends basefield {
   type = "foreignkey";
+  adminUrlName = "admin";
+  modelsUrlName = "models";
   convert = String;
-  adminUrlName = 'admin';
-  modelsUrlName = 'models';
-  optionNames = foreignkeyOptionNames
+  getOptionNames() {
+    return foreignkeyOptionNames;
+  }
   constructor(options) {
     if (options.dbType === undefined) {
       options.dbType = NOT_DEFIEND;
     }
     super(options);
-    let fkModel = this.reference;
+    const fkModel = this.reference;
     if (fkModel === "self") {
       return this;
     }
     assert(
-      typeof fkModel === "function" || typeof fkModel === "object",
+      fkModel.__is_model_class__,
       `a foreignkey must define reference model. not ${fkModel}(type: ${typeof fkModel})`
     );
     let rc = this.referenceColumn;
     if (!rc) {
-      let pk = fkModel.primaryKey || "id";
+      const pk = fkModel.primaryKey || "id";
       rc = pk;
       this.referenceColumn = pk;
     }
-    let fk = fkModel.fields[rc];
+    const fk = fkModel.fields[rc];
     assert(
       fk,
-      `invalid foreignkey name ${rc} for foreign model ${fkModel.tableName || "[TABLE NAME NOT DEFINED YET]"}`
+      `invalid foreignkey name ${rc} for foreign model ${fkModel.tableName || "[TABLE NAME NOT DEFINED YET]"
+      }`
     );
     this.convert = assert(
       VALID_FOREIGN_KEY_TYPES[fk.type],
@@ -652,14 +701,13 @@ class foreignkey extends basefield {
   }
 
   getValidators(validators) {
-    let fkName = this.referenceColumn;
-    let convert = this.convert;
+    const fkName = this.referenceColumn;
     function foreignkeyValidator(v) {
       if (typeof v === "object") {
         v = v[fkName];
       }
       try {
-        v = convert(v);
+        v = this.convert(v);
       } catch (error) {
         throw new Error("error when converting foreign key:" + error.message);
       }
@@ -669,31 +717,32 @@ class foreignkey extends basefield {
     return super.getValidators(validators);
   }
   load(value) {
-    let fkName = this.referenceColumn;
-    let fkModel = this.reference;
-    function __index(t, key) {
-      if (fkModel[key]) {
-        return fkModel[key];
-      } else if (fkModel.fields[key]) {
-        let pk = rawget(t, fkName);
-        if (!pk) {
-          return undefined;
-        }
-        let res = fkModel.get({ [fkName]: pk });
-        if (!res) {
-          return undefined;
-        }
-        for (let [k, v] of Object.entries(res)) {
-          rawset(t, k, v);
-        }
-        fkModel(t);
-        return t[key];
-      } else {
-        return undefined;
-      }
-    }
+    //** todo 用Proxy改写
+    const fkName = this.referenceColumn;
+    const fkModel = this.reference;
+    // function __index(t, key) {
+    //   if (fkModel[key]) {
+    //     return fkModel[key];
+    //   } else if (fkModel.fields[key]) {
+    //     let pk = rawget(t, fkName);
+    //     if (!pk) {
+    //       return undefined;
+    //     }
+    //     let res = fkModel.get({ [fkName]: pk });
+    //     if (!res) {
+    //       return undefined;
+    //     }
+    //     for (let [k, v] of Object.entries(res)) {
+    //       rawset(t, k, v);
+    //     }
+    //     fkModel(t);
+    //     return t[key];
+    //   } else {
+    //     return undefined;
+    //   }
+    // }
     // return setmetatable({ [fkName]: value }, { __index: __index });
-    return { [fkName]: value }
+    return fkModel.newRecord({ [fkName]: value });
   }
   prepareForDb(value) {
     if (value === "" || value === undefined) {
@@ -703,74 +752,101 @@ class foreignkey extends basefield {
     }
   }
   json() {
-    let ret = super.json();
+    const ret = super.json();
     ret.reference = this.reference.tableName;
     ret.autocomplete = true;
     if (ret.realtime === undefined) {
       ret.realtime = true;
     }
     if (ret.keywordQueryName === undefined) {
-      ret.keywordQueryName = "__keyword";
+      ret.keywordQueryName = "keyword";
     }
     if (ret.limitQueryName === undefined) {
-      ret.limitQueryName = "__limit";
+      ret.limitQueryName = "limit";
     }
     if (ret.url === undefined) {
-      ret.url = `/${this.adminUrlName}/${this.modelsUrlName}/foreignkey/${ret.tableName}?__name=${this.name}`;
+      ret.url = `/${this.adminUrlName}/${this.modelsUrlName}/foreignkey/${ret.tableName}?name=${this.name}`;
     }
     return ret;
   }
 }
+
 function getEnv(key) {
-  return process.env[key]
+  return process.env[key];
 }
-function byteSizeParser(key) {
-  return ""
-}
-let OSS_ACCESS_KEY_ID = getEnv("OSS_ACCESS_KEY_ID");
-let OSS_ACCESS_KEY_SECRET = getEnv("OSS_ACCESS_KEY_SECRET");
-let OSS_BUCKET = getEnv("OSS_BUCKET");
-let OSS_REGION = getEnv("OSS_REGION");
-let OSS_SIZE = byteSizeParser(getEnv("OSS_SIZE") || "7MB");
-let OSS_EXPIRATION_DAYS = Number(getEnv("OSS_EXPIRATION_DAYS") || 180);
-function getPolicyTime(seconds) {
-  return seconds + "T12:00:00.000Z"
-}
-let DEFAULT_POLICY = {
-  expiration: getPolicyTime(3600 * 24 * OSS_EXPIRATION_DAYS),
-  conditions: [["content-length-range", 1, OSS_SIZE]],
+
+const sizeTable = {
+  k: 1024,
+  m: 1024 * 1024,
+  g: 1024 * 1024 * 1024,
+  kb: 1024,
+  mb: 1024 * 1024,
+  gb: 1024 * 1024 * 1024,
 };
-function getPolicy(policy) {
-  policy = { ...DEFAULT_POLICY, ...policy };
-  let size = byteSizeParser(policy.size || OSS_SIZE);
-  policy.size = undefined;
-  if (!policy.conditions) {
-    policy.conditions = [];
+function byteSizeParser(t) {
+  if (typeof t === "string") {
+    const unit = t.replaceAll(/^(\d+)([^\d]+)$/g, "$2").toLowerCase();
+    const ts = t.replaceAll(/^(\d+)([^\d]+)$/g, "$1").toLowerCase();
+    const bytes = sizeTable[unit];
+    assert(bytes, "invalid size unit: " + unit);
+    const num = Number(ts);
+    assert(num, "can't convert `" + (ts + "` to a number"));
+    return num * bytes;
+  } else if (typeof t === "number") {
+    return t;
+  } else {
+    throw new Error("invalid type:" + typeof t);
   }
-  let modified = undefined;
-  for (let e of policy.conditions) {
-    if (typeof e === "object" && e[1] === "content-length-range") {
-      e[3] = size;
-      modified = true;
-    }
+}
+
+const ALI_OSS_ACCESS_KEY_ID = getEnv("ALI_OSS_ACCESS_KEY_ID") || "";
+const ALI_OSS_ACCESS_KEY_SECRET = getEnv("ALI_OSS_ACCESS_KEY_SECRET") || "";
+const ALI_OSS_BUCKET = getEnv("ALI_OSS_BUCKET") || "";
+const ALI_OSS_REGION = getEnv("ALI_OSS_REGION") || "";
+const ALI_OSS_SIZE = byteSizeParser(getEnv("ALI_OSS_SIZE") || "1MB");
+const ALI_OSS_LIFETIME = Number(getEnv("ALI_OSS_LIFETIME")) || 30;
+const ALI_OSS_EXPIRATION_DAYS = Number(
+  getEnv("ALI_OSS_EXPIRATION_DAYS") || 180
+);
+function getPolicyTime(seconds) {
+  const now = new Date();
+  return new Date(now + seconds * 1000).toISOString();
+}
+function getPolicy(options) {
+  const conditions = [];
+  const policy = {
+    conditions: conditions,
+    expiration: getPolicyTime(options.lifetime || ALI_OSS_LIFETIME),
+  };
+  if (options.bucket) {
+    conditions.push({ bucket: options.bucket });
   }
-  if (!modified) {
-    policy.conditions.push(["content-length-range", 0, size]);
+  const size = options.size;
+  if (typeof size === "object") {
+    conditions.push(["content-length-range", size[0], size[1]]);
+  } else if (typeof size === "string" || typeof size === "number") {
+    conditions.push(["content-length-range", 1, byteSizeParser(size)]);
+  } else {
+    conditions.push(["content-length-range", 1, ALI_OSS_SIZE]);
+  }
+  if (options.key) {
+    conditions.push(["eq", "$key", options.key]);
   }
   return policy;
 }
-function getPayload(kwargs = {}) {
-  let data = [];
-  let policy = getPolicy(kwargs.policy);
-  data.policy = encodeBase64(cjsonEncode(policy));
-  data.signature = encodeBase64(
-    hmacSha1(kwargs.keySecret || OSS_ACCESS_KEY_SECRET, data.policy)
+function getPayload(options) {
+  const data = [];
+  data.policy = btoa(JSON.stringify(getPolicy(options)));
+  data.signature = btoa(
+    hmacsha1(options.keySecret || ALI_OSS_ACCESS_KEY_SECRET, data.policy)
   );
-  data.OSSAccessKeyId = kwargs.keyId || OSS_ACCESS_KEY_ID;
-  data.successActionStatus = 200;
+  data.OSSAccessKeyId = options.keyId || ALI_OSS_ACCESS_KEY_ID;
+  if (options.successActionStatus) {
+    data.successActionStatus = options.successActionStatus;
+  }
   return data;
 }
-let aliossOptionNames = [
+const aliossOptionNames = [
   ...baseOptionNames,
   "size",
   "policy",
@@ -779,47 +855,44 @@ let aliossOptionNames = [
   "payload",
   "url",
   "input_type",
+  "image",
+  "maxlength",
+  "width",
+  "prefix",
+  "hash",
 ];
 class alioss extends string {
   type = "alioss";
   dbType = "varchar";
-  payload = getPayload();
-  getPayload = getPayload;
-  getPolicy = getPolicy;
-  optionNames = aliossOptionNames
+  optionNames = aliossOptionNames;
   constructor(options) {
     if (options.maxlength === undefined) {
       options.maxlength = 300;
     }
     super(options);
-    if (this.size) {
-      this.policy = this.policy || [];
-      this.sizeArg = this.size;
-      this.size = byteSizeParser(this.size);
-      this.policy.size = this.size;
-    }
-    if (this.times) {
-      this.policy.expiration = getPolicyTime(timeParser(this.times));
-    }
-    this.payload = getPayload({
-      key: this.keySecret,
-      policy: this.policy,
-      id: this.keyId,
-    });
-    this.url = `//${this.bucket || OSS_BUCKET}.${this.region || OSS_REGION
+    this.keySecret = options.keySecret;
+    this.keyId = options.keyId;
+    this.sizeArg = options.size;
+    this.size = byteSizeParser(options.size);
+    this.lifetime = options.lifetime;
+    this.url = `//${options.bucket || ALI_OSS_BUCKET}.${options.region || ALI_OSS_REGION
       }.aliyuncs.com/`;
-    this.policy = undefined;
     return this;
   }
-
+  getPayload(options) {
+    return getPayload({ ...this, ...options });
+  }
   getValidators(validators) {
     validators.unshift(Validator.url);
-    return string.getValidators.call(this, validators);
+    return super.getValidators(validators);
   }
   json() {
-    let ret = string.json.call(this);
+    const ret = super.json();
     if (ret.inputType === undefined) {
       ret.inputType = "file";
+    }
+    if (ret.image) {
+      ret.type = "aliossImage";
     }
     return ret;
   }
