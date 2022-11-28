@@ -85,7 +85,7 @@ const baseOptionNames = [
   "choices",
   "strict",
   "disabled",
-  "error_messages",
+  "errorMessages",
   "default",
   "hint",
   "lazy",
@@ -95,8 +95,8 @@ const baseOptionNames = [
   "url",
   "columns",
   "verifyUrl",
-  "post_names",
-  "code_lifetime",
+  "postNames",
+  "codeLifetime",
 ];
 
 class basefield {
@@ -857,7 +857,7 @@ const aliossOptionNames = [
   "times",
   "payload",
   "url",
-  "input_type",
+  "inputType",
   "image",
   "maxlength",
   "width",
