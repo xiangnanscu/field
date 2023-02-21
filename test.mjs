@@ -1,7 +1,14 @@
 /* eslint-disable no-undef */
-import { string, sfzh, integer, datetime, date, array } from "./src/field.mjs";
+import {
+  StringField,
+  SfzhField,
+  IntegerField,
+  DatetimeField,
+  DateField,
+  ArrayField,
+} from "./src/field.mjs";
 
-const s1 = string.new({
+const s1 = StringField.new({
   maxlength: 5,
   minlength: 2,
   name: "s1",
@@ -43,7 +50,7 @@ test("去空格", () => {
   expect(s1.validate("1 2 ")).toBe("12");
 });
 
-const sfz1 = sfzh.new({ name: "sfz1", required: true });
+const sfz1 = SfzhField.new({ name: "sfz1", required: true });
 // console.log(sfz1.finalValidators)
 test("sfzh.json()", () => {
   expect(sfz1.json()).toEqual({
@@ -81,7 +88,7 @@ test("非法身份证号-年份", () => {
   expect(() => sfz1.validate("340202297104106891")).toThrow("身份证号错误");
 });
 
-const i1 = integer.new({ name: "i1", min: 1, max: 3 });
+const i1 = IntegerField.new({ name: "i1", min: 1, max: 3 });
 // console.log(i1.json())
 test("integer.json()", () => {
   expect(i1.json()).toEqual({
@@ -116,7 +123,7 @@ test("不能是浮点字符串", () => {
   expect(() => i1.validate("1.1")).toThrow(`要求整数`);
 });
 
-const d1 = datetime.new({ autoNowAdd: true, name: "d1" });
+const d1 = DatetimeField.new({ autoNowAdd: true, name: "d1" });
 // console.log(d1.json())
 test("datetime.json()", () => {
   expect(d1.json()).toEqual({
@@ -156,7 +163,7 @@ test("非法datetime秒", () => {
   expect(() => d1.validate("2010-01-01 00:00:70")).toThrow(/秒数字\d+错误/);
 });
 
-const d2 = date.new({ name: "d2" });
+const d2 = DateField.new({ name: "d2" });
 // console.log(d2.json())
 test("date.json()", () => {
   expect(d2.json()).toEqual({
@@ -183,7 +190,7 @@ test("非法date日期", () => {
   expect(() => d2.validate("2010-01-41")).toThrow(/日期数字\d+错误/);
 });
 
-const a1 = array.new({ name: "a1" });
+const a1 = ArrayField.new({ name: "a1" });
 test("数组不能为数字", () => {
   expect(() => a1.validate(1)).toThrow(/value of array field must be a array/);
 });

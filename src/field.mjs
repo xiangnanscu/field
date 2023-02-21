@@ -1,5 +1,4 @@
 import Validator from "@xiangnanscu/validator";
-import hmacsha1 from "crypto-js/hmac-sha1.js";
 
 const TABLE_MAX_ROWS = 1;
 const CHOICES_ERROR_DISPLAY_COUNT = 30;
@@ -99,7 +98,7 @@ const baseOptionNames = [
   "codeLifetime",
 ];
 
-class basefield {
+class BaseField {
   static getLocalTime = getLocalTime;
   static NOT_DEFIEND = NOT_DEFIEND;
   __is_field_class__ = true;
@@ -239,7 +238,7 @@ const stringOptionNames = [
   "maxlength",
 ];
 const stringValidatorNames = ["pattern", "length", "minlength", "maxlength"];
-class string extends basefield {
+class StringField extends BaseField {
   type = "string";
   dbType = "varchar";
   compact = true;
@@ -294,7 +293,7 @@ class string extends basefield {
   }
 }
 
-class sfzh extends string {
+class SfzhField extends StringField {
   type = "sfzh";
   dbType = "varchar";
   constructor(options) {
@@ -310,7 +309,7 @@ class sfzh extends string {
 
 const integerOptionNames = [...baseOptionNames, "min", "max", "serial"];
 const intergerValidatorNames = ["min", "max"];
-class integer extends basefield {
+class IntegerField extends BaseField {
   type = "integer";
   dbType = "integer";
   get optionNames() {
@@ -343,14 +342,14 @@ class integer extends basefield {
     }
   }
 }
-class text extends basefield {
+class TextField extends BaseField {
   type = "text";
   dbType = "text";
 }
 
 const floatValidatorNames = ["min", "max"];
 const floatOptionNames = [...baseOptionNames, "min", "max", "precision"];
-class float extends basefield {
+class FloatField extends BaseField {
   type = "float";
   dbType = "float";
   get optionNames() {
@@ -383,7 +382,7 @@ const DEFAULT_BOOLEAN_CHOICES = [
   { label: "否", value: false },
 ];
 const booleanOptionNames = [...baseOptionNames, "cn"];
-class boolean extends basefield {
+class BooleanField extends BaseField {
   type = "boolean";
   dbType = "boolean";
   get optionNames() {
@@ -415,7 +414,7 @@ class boolean extends basefield {
 }
 
 const jsonOptionNames = [...baseOptionNames];
-class json extends basefield {
+class JsonField extends BaseField {
   type = "json";
   dbType = "jsonb";
   get optionNames() {
@@ -459,7 +458,7 @@ function nonEmptyArrayRequired(message) {
   }
   return arrayValidator;
 }
-class array extends json {
+class ArrayField extends JsonField {
   type = "array";
   dbType = "jsonb";
   getValidators(validators) {
@@ -485,7 +484,7 @@ const tableOptionNames = [
   "maxRows",
   "uploadable",
 ];
-class table extends array {
+class TableField extends ArrayField {
   type = "table";
   maxRows = TABLE_MAX_ROWS;
   get optionNames() {
@@ -493,7 +492,7 @@ class table extends array {
   }
   constructor(options) {
     super(options);
-    if (typeof this.model !== "object" || !this.model.__is_model_class__) {
+    if (typeof this.model !== "object" || !this.model.__isModelClass__) {
       throw new Error("please define model for a table field: " + this.name);
     }
     if (!this.default || this.default === "") {
@@ -555,7 +554,7 @@ const datetimeOptionNames = [
   "precision",
   "timezone",
 ];
-class datetime extends basefield {
+class DatetimeField extends BaseField {
   type = "datetime";
   dbType = "timestamp";
   precision = 0;
@@ -594,7 +593,7 @@ class datetime extends basefield {
 }
 
 const dateOptionNames = [...baseOptionNames];
-class date extends basefield {
+class DateField extends BaseField {
   type = "date";
   dbType = "date";
   get optionNames() {
@@ -613,7 +612,7 @@ class date extends basefield {
   }
 }
 const timeOptionNames = [...baseOptionNames, "precision", "timezone"];
-class time extends basefield {
+class TimeField extends BaseField {
   type = "time";
   dbType = "time";
   precision = 0;
@@ -655,7 +654,7 @@ const foreignkeyOptionNames = [
   "autocomplete",
   "url",
 ];
-class foreignkey extends basefield {
+class ForeignkeyField extends BaseField {
   type = "foreignkey";
   adminUrlName = "admin";
   modelsUrlName = "models";
@@ -673,7 +672,7 @@ class foreignkey extends basefield {
       return this;
     }
     assert(
-      fkModel.__is_model_class__,
+      fkModel.__isModelClass__,
       `a foreignkey must define reference model. not ${fkModel}(type: ${typeof fkModel})`
     );
     let rc = this.referenceColumn;
@@ -705,7 +704,7 @@ class foreignkey extends basefield {
 
   getValidators(validators) {
     const fkName = this.referenceColumn;
-    function foreignkeyValidator(v) {
+    const foreignkeyValidator = (v) => {
       if (typeof v === "object") {
         v = v[fkName];
       }
@@ -715,7 +714,7 @@ class foreignkey extends basefield {
         throw new Error("error when converting foreign key:" + error.message);
       }
       return v;
-    }
+    };
     validators.unshift(foreignkeyValidator);
     return super.getValidators(validators);
   }
@@ -802,53 +801,11 @@ function byteSizeParser(t) {
   }
 }
 
-const ALI_OSS_ACCESS_KEY_ID = getEnv("ALI_OSS_ACCESS_KEY_ID") || "";
-const ALI_OSS_ACCESS_KEY_SECRET = getEnv("ALI_OSS_ACCESS_KEY_SECRET") || "";
 const ALI_OSS_BUCKET = getEnv("ALI_OSS_BUCKET") || "";
 const ALI_OSS_REGION = getEnv("ALI_OSS_REGION") || "";
 const ALI_OSS_SIZE = byteSizeParser(getEnv("ALI_OSS_SIZE") || "1MB");
 const ALI_OSS_LIFETIME = Number(getEnv("ALI_OSS_LIFETIME")) || 30;
-// const ALI_OSS_EXPIRATION_DAYS = Number(
-//   getEnv("ALI_OSS_EXPIRATION_DAYS") || 180
-// );
-function getPolicyTime(seconds) {
-  const now = new Date();
-  return new Date(now + seconds * 1000).toISOString();
-}
-function getPolicy(options) {
-  const conditions = [];
-  const policy = {
-    conditions: conditions,
-    expiration: getPolicyTime(options.lifetime || ALI_OSS_LIFETIME),
-  };
-  if (options.bucket) {
-    conditions.push({ bucket: options.bucket });
-  }
-  const size = options.size;
-  if (typeof size === "object") {
-    conditions.push(["content-length-range", size[0], size[1]]);
-  } else if (typeof size === "string" || typeof size === "number") {
-    conditions.push(["content-length-range", 1, byteSizeParser(size)]);
-  } else {
-    conditions.push(["content-length-range", 1, ALI_OSS_SIZE]);
-  }
-  if (options.key) {
-    conditions.push(["eq", "$key", options.key]);
-  }
-  return policy;
-}
-function getPayload(options) {
-  const data = [];
-  data.policy = btoa(JSON.stringify(getPolicy(options)));
-  data.signature = btoa(
-    hmacsha1(options.keySecret || ALI_OSS_ACCESS_KEY_SECRET, data.policy)
-  );
-  data.OSSAccessKeyId = options.keyId || ALI_OSS_ACCESS_KEY_ID;
-  if (options.successActionStatus) {
-    data.successActionStatus = options.successActionStatus;
-  }
-  return data;
-}
+
 const aliossOptionNames = [
   ...baseOptionNames,
   "size",
@@ -856,6 +813,7 @@ const aliossOptionNames = [
   "sizeArg",
   "times",
   "payload",
+  "payloadUrl",
   "url",
   "inputType",
   "image",
@@ -864,7 +822,7 @@ const aliossOptionNames = [
   "prefix",
   "hash",
 ];
-class alioss extends string {
+class AliossField extends StringField {
   type = "alioss";
   dbType = "varchar";
   optionNames = aliossOptionNames;
@@ -873,18 +831,34 @@ class alioss extends string {
       options.maxlength = 300;
     }
     super(options);
-    this.keySecret = options.keySecret;
-    this.keyId = options.keyId;
     this.sizeArg = options.size;
-    this.size = byteSizeParser(options.size);
-    this.lifetime = options.lifetime;
+    this.size = byteSizeParser(options.size || ALI_OSS_SIZE);
+    this.lifetime = options.lifetime || ALI_OSS_LIFETIME;
     this.url = `//${options.bucket || ALI_OSS_BUCKET}.${
       options.region || ALI_OSS_REGION
     }.aliyuncs.com/`;
     return this;
   }
-  getPayload(options) {
-    return getPayload({ ...this, ...options });
+  async getPayload(options) {
+    const response = await fetch(this.payloadUrl, {
+      method: "POST", // *GET, POST, PUT, DELETE, etc.
+      mode: "cors", // no-cors, *cors, same-origin
+      cache: "no-cache", // *default, no-cache, reload, force-cache, only-if-cached
+      credentials: "same-origin", // include, *same-origin, omit
+      headers: {
+        "Content-Type": "application/json",
+        // 'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      // redirect: "follow", // manual, *follow, error
+      // referrerPolicy: "no-referrer", // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
+      body: JSON.stringify({
+        ...options,
+        size: options.size || this.size,
+        lifetime: options.lifetime || this.lifetime,
+        url: options.url || this.url,
+      }), // body data type must match "Content-Type" header
+    });
+    return response.json();
   }
   getValidators(validators) {
     validators.unshift(Validator.url);
@@ -903,36 +877,36 @@ class alioss extends string {
 }
 
 export default {
-  basefield,
-  string,
-  text,
-  integer,
-  float,
-  datetime,
-  date,
-  time,
-  json,
-  array,
-  table,
-  foreignkey,
-  boolean,
-  alioss,
-  sfzh,
+  BaseField,
+  StringField,
+  TextField,
+  IntegerField,
+  FloatField,
+  DatetimeField,
+  DateField,
+  TimeField,
+  JsonField,
+  ArrayField,
+  TableField,
+  ForeignkeyField,
+  BooleanField,
+  AliossField,
+  SfzhField,
 };
 export {
-  basefield,
-  string,
-  text,
-  integer,
-  float,
-  datetime,
-  date,
-  time,
-  json,
-  array,
-  table,
-  foreignkey,
-  boolean,
-  alioss,
-  sfzh,
+  BaseField,
+  StringField,
+  TextField,
+  IntegerField,
+  FloatField,
+  DatetimeField,
+  DateField,
+  TimeField,
+  JsonField,
+  ArrayField,
+  TableField,
+  ForeignkeyField,
+  BooleanField,
+  AliossField,
+  SfzhField,
 };

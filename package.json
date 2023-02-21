@@ -1,6 +1,6 @@
 {
   "name": "@xiangnanscu/field",
-  "version": "0.11.0",
+  "version": "0.12.0",
   "description": "field",
   "main": "src/field.mjs",
   "scripts": {
@@ -43,7 +43,6 @@
     "vue": "^3.2.37"
   },
   "dependencies": {
-    "@xiangnanscu/validator": "^0.2.0",
-    "crypto-js": "^4.1.1"
+    "@xiangnanscu/validator": "^0.2.0"
   }
 }
